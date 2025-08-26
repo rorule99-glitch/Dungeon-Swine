@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Swine</title>
+    <!-- New font for a medieval/rpg feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #333;
+            font-family: 'MedievalSharp', cursive; /* Updated font family for the entire body */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #fff;
+            z-index: 10;
+            transition: opacity 1s ease-in-out;
+        }
+        #message-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        #health-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #00ff00;
+            z-index: 10;
+            transition: opacity 1s ease-in-out;
+        }
+        #coin-display {
+            position: absolute;
+            top: 20px;
+            right: 170px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #A0522D;
+            z-index: 10;
+            transition: opacity 1s ease-in-out;
+        }
+        
+        /* New Cooldown Meters */
+        #cooldown-meters {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+        .cooldown-meter {
+            width: 150px;
+            height: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .cooldown-meter-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear; /* Smooth fill animation */
+        }
+        #stun-meter .cooldown-meter-fill {
+            background-color: #66ccff; /* Stun color */
+        }
+        #attack-meter .cooldown-meter-fill {
+            background-color: #ffa500; /* Attack color */
+        }
+        .cooldown-meter-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        /* New Scroll UI */
+        #scroll-ui {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 8px;
+            z-index: 10;
+        }
+        #scroll-ui-label {
+            font-size: 0.8rem;
+        }
+        #scroll-ui-count {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff00;
+        }
+        
+        /* Updated Start Menu Styles */
+        #start-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 30;
+        }
+        #start-menu h1 {
+            font-family: 'Metal Mania', cursive; /* Retain this font for the title */
+            font-size: 4.5rem;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px #ff0080, 0 0 20px #ff0080;
+            letter-spacing: 5px;
+        }
+        #start-menu h2 {
+            font-size: 1.5rem;
+            color: #ccc;
+            margin-top: 0;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+        #total-coins-display {
+            font-size: 1.5rem;
+            color: #A0522D;
+            margin-bottom: 20px;
+        }
+        #start-menu button {
+            padding: 15px 30px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(45deg, #008cba, #007b9a);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        #start-menu button:hover {
+            background: linear-gradient(45deg, #007b9a, #006a88);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Menu Screens within the Start Menu */
+        #main-menu-screen, #shop-menu-screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* X button for the shop screen */
+        #shop-menu-screen .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        #shop-menu-screen .close-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #shop-menu-screen .close-btn svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+
+        /* Shop Styles - NEW LOOK! */
+        #shop-container {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            background-image: linear-gradient(to bottom, rgba(50, 50, 50, 0.9), rgba(20, 20, 20, 0.9));
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #5a5a5a;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.1);
+            max-height: 80vh;
+            overflow-y: scroll;
+            padding-bottom: 50px;
+        }
+        
+        /* Customize scrollbar */
+        #shop-container::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        #shop-container::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 10px;
+        }
+
+        #shop-container::-webkit-scrollbar-thumb {
+            background-color: #555;
+            border-radius: 10px;
+            border: 3px solid #2a2a2a;
+        }
+
+        .upgrade-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s ease-in-out;
+            min-width: 250px;
+            max-width: 250px;
+        }
+        
+        .upgrade-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.6);
+        }
+        
+        .upgrade-item h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+            color: #ffcc00; /* Gold-like color for titles */
+        }
+        
+        .upgrade-item p {
+            margin: 5px 0;
+            font-size: 1rem;
+            color: #ddd;
+        }
+        
+        .upgrade-item button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(45deg, #1f7a1f, #33cc33);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .upgrade-item button:hover:not(:disabled) {
+            background: linear-gradient(45deg, #248f24, #33e633);
+            transform: translateY(-2px);
+        }
+        
+        .upgrade-item button:disabled {
+            background-color: #555;
+            color: #bbb;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .upgrade-cost {
+            color: #ff6600;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .shop-message {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #fff;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            text-align: center;
+            width: 100%;
+        }
+        
+        /* Settings Icon */
+        #settings-icon {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 15;
+            transition: transform 0.2s;
+        }
+        #settings-icon:hover {
+            transform: rotate(45deg);
+        }
+        #settings-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        /* Settings Menu */
+        #settings-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 40;
+        }
+        #settings-menu h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        #settings-menu button {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #settings-menu #quit-button {
+            background-color: #dc3545;
+        }
+        #settings-menu #quit-button:hover {
+            background-color: #c82333;
+        }
+        #settings-menu #resume-button {
+            background-color: #007bff;
+        }
+        #settings-menu #resume-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Game Area -->
+        <div id="game-area">
+            <!-- Settings Icon -->
+            <div id="settings-icon" onclick="toggleSettingsMenu()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+            </div>
+
+            <!-- Settings Menu -->
+            <div id="settings-menu">
+                <h2>Settings</h2>
+                <button id="resume-button" onclick="toggleSettingsMenu()">Resume Game</button>
+                <button id="quit-button" onclick="quitToShop()">Quit Game</button>
+            </div>
+
+            <!-- Info panel for instructions -->
+            <div id="info-panel">
+                <strong>Dungeon Swine</strong><br>
+                <br>
+                <strong>Controls:</strong><br>
+                Move: WASD keys<br>
+                - W key: moves forward<br>
+                - S key: moves backward<br>
+                - A key: moves left<br>
+                - D key: moves right<br>
+                Run: Shift<br>
+                **Stun:** Spacebar<br>
+                **Attack:** E<br>
+                **Magic Scroll:** Q<br>
+                Camera: Fixed top-down view
+                <br>
+                <br>
+                Objective: Explore the maze and avoid the pig monsters!<br>
+                Find the green finish line to win!
+            </div>
+            
+            <!-- Health display moved to the top right -->
+            <div id="health-display">Health: 100</div>
+
+            <!-- New coin display -->
+            <div id="coin-display">Coins: 0</div>
+            
+            <!-- New Cooldown Meters -->
+            <div id="cooldown-meters">
+                <div id="stun-meter" class="cooldown-meter">
+                    <div id="stun-meter-fill" class="cooldown-meter-fill"></div>
+                    <span class="cooldown-meter-label">Stun (Space)</span>
+                </div>
+                <div id="attack-meter" class="cooldown-meter">
+                    <div id="attack-meter-fill" class="cooldown-meter-fill"></div>
+                    <span class="cooldown-meter-label">Attack (E)</span>
+                </div>
+            </div>
+            
+            <!-- New scroll UI, centered at the bottom -->
+            <div id="scroll-ui">
+                <span id="scroll-ui-label">Scrolls (Q)</span>
+                <span id="scroll-ui-count">0</span>
+            </div>
+
+            <!-- Message box for in-game messages, now at bottom-center -->
+            <div id="message-box"></div>
+        </div>
+        
+        <!-- Updated Start Menu Content -->
+        <div id="start-menu">
+            <h1>Dungeon Swine</h1>
+            <h2>Survive the Labyrinth. Collect the Gold.</h2>
+            <div id="main-menu-screen">
+                <div id="total-coins-display"></div>
+                <button onclick="startGame()">Start Game</button>
+                <button onclick="toggleMenuScreen('shop')">Shop</button>
+            </div>
+            
+            <!-- Shop Menu Screen -->
+            <div id="shop-menu-screen">
+                <button class="close-btn" onclick="toggleMenuScreen('main')">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                    </svg>
+                </button>
+                <div id="shop-panel">
+                    <div id="shop-container">
+                        <!-- Health Upgrade -->
+                        <div class="upgrade-item">
+                            <h3>Health Upgrade</h3>
+                            <p id="health-level">Level: 0</p>
+                            <p id="health-current-stat">Current Health: 100</p>
+                            <p>Cost: <span id="health-cost" class="upgrade-cost"></span></p>
+                            <button id="buy-health-btn" onclick="buyUpgrade('health')">Buy</button>
+                        </div>
+                        
+                        <!-- Attack Upgrade -->
+                        <div class="upgrade-item">
+                            <h3>Attack Damage</h3>
+                            <p id="attack-level">Level: 0</p>
+                            <p id="attack-current-stat">Current Damage: 25</p>
+                            <p>Cost: <span id="attack-cost" class="upgrade-cost"></span></p>
+                            <button id="buy-attack-btn" onclick="buyUpgrade('attack')">Buy</button>
+                        </div>
+                        
+                        <!-- Stun Upgrade -->
+                        <div class="upgrade-item">
+                            <h3>Stun Duration</h3>
+                            <p id="stun-level">Level: 0</p>
+                            <p id="stun-current-stat">Current Duration: 2s</p>
+                            <p>Cost: <span id="stun-cost" class="upgrade-cost"></span></p>
+                            <button id="buy-stun-btn" onclick="buyUpgrade('stun')">Buy</button>
+                        </div>
+                        
+                        <!-- New Magic Scroll Item -->
+                        <div class="upgrade-item">
+                            <h3>Magic Scroll</h3>
+                            <p>A magical scroll dealing 100 AOE damage.</p>
+                            <p id="scroll-level">Count: 0/4</p>
+                            <p>Cost: <span id="scroll-cost" class="upgrade-cost"></span></p>
+                            <button id="buy-scroll-btn" onclick="buyUpgrade('scroll')">Buy</button>
+                        </div>
+                    </div>
+                    <div class="shop-message">Thank you for shopping!</div>
+                    <div class="shop-message">Dungeon Swine, come again!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Script to load Three.js and Cannon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- The cannon-es library is a module, so we need to add type="module" -->
+    <script type="module">
+        import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.min.js';
+
+        // --- Global Variables ---
+        let scene, camera, renderer, world;
+        let player, playerBody;
+        let monsters = [];
+        let goldenPig = null;
+        let lastGoldenPigSpawnTime = 0;
+        const GOLDEN_PIG_SPAWN_COOLDOWN = 60000; // 60 seconds
+        const GOLDEN_PIG_ESCAPE_DISTANCE = 30; // Runs away when player is this close
+        const GOLDEN_PIG_FLEE_SPEED = 20; // Fast speed to run away
+
+        let activeAttackWaves = [];
+        let bodiesToRemove = [];
+        let keys = {};
+        let cameraOffset = new THREE.Vector3(0, 20, 0);
+        let runSpeedMultiplier = 2;
+        let maxSpeed = 10;
+        let mazeData;
+        const walls = [];
+        let lastStunTime = 0;
+        let lastAttackTime = 0;
+        let finishLine, finishLineBody;
+        let animationId;
+        let playerHealth;
+        let maxHealth;
+        let lastDamageTime = 0;
+        let isGameRunning = false;
+        let playerCoins = 0;
+        let totalCoins = 0;
+        const totalCoinsKey = 'maze_of_the_swine_coins';
+        const maxCoins = 9000;
+        let goldCoins = [];
+        let silverCoins = []; // New array for silver coins
+        let goldenCoins = []; // New array for golden coins
+        let hearts = []; // New array for heart drops
+        let isGameStarted = false; // Flag to check if the game is initialized
+
+        // --- Cooldown Meter DOM Elements
+        let stunMeterFill, attackMeterFill;
+        let scrollCountElement;
+
+        // --- Game Upgrades and their data
+        const upgradeKeys = {
+            HEALTH: 'upgrade_health',
+            ATTACK: 'upgrade_attack',
+            STUN: 'upgrade_stun',
+            SCROLL: 'upgrade_scroll' // New key for scrolls
+        };
+        const upgradeData = {
+            health: {
+                levelKey: 'health_level',
+                maxLevel: 10,
+                baseStat: 100,
+                increasePerLevel: 40,
+                baseCost: 100,
+                costIncrease: 50
+            },
+            attack: {
+                levelKey: 'attack_level',
+                maxLevel: 10,
+                baseStat: 25,
+                increasePerLevel: 10,
+                baseCost: 100,
+                costIncrease: 50
+            },
+            stun: {
+                levelKey: 'stun_level',
+                maxLevel: 10,
+                baseStat: 2000,
+                increasePerLevel: 50,
+                baseCost: 100,
+                costIncrease: 50
+            },
+            scroll: { // New data for scrolls
+                levelKey: 'scroll_count',
+                maxLevel: 4,
+                baseStat: 1, // Number of scrolls to add
+                increasePerLevel: 0,
+                baseCost: 200,
+                costIncrease: 0
+            }
+        };
+
+        // Variables to hold current upgrade levels, loaded from local storage
+        let healthLevel = 0;
+        let attackLevel = 0;
+        let stunLevel = 0;
+        let scrollCount = 0; // New variable for scroll count
+
+        // --- Game Configuration (Dynamic values now) ---
+        const MAZE_SIZE = 25;
+        const WALL_HEIGHT = 10;
+        const WALL_WIDTH = 5;
+        const PLAYER_RADIUS = 0.5;
+        const PLAYER_HEIGHT = 2;
+        const TIME_STEP = 1 / 60;
+        const NUM_MONSTERS = 25;
+        const MONSTER_RADIUS = 0.7;
+        const MONSTER_HEIGHT = 2.5;
+        const PINK_PIG_HEALTH = 50;
+        const PINK_PIG_DAMAGE = 5;
+        const RED_PIG_HEALTH = 200; // New constant
+        const RED_PIG_DAMAGE = 20; // New constant
+        const STUN_DAMAGE = 0; // Stun now does 0 damage
+        let ATTACK_DAMAGE; // Now a dynamic variable
+        const PATROL_SPEED = 5 / 3;
+        const CHARGE_SPEED = 15 / 3;
+        const AGGRO_DISTANCE = 30;
+        const CHARGE_DURATION = 3000;
+        const COOLDOWN_DURATION = 2000;
+        const STUN_RADIUS = 5;
+        let STUN_DURATION; // Now a dynamic variable
+        const STUN_COOLDOWN = 10000;
+        const ATTACK_COOLDOWN = 5000;
+        const PLAYER_DAMAGE_COOLDOWN = 1000;
+        const PINK_COIN_VALUE = 1; // Constant for clarity
+        const SILVER_COIN_VALUE = 25; // New constant
+        const GOLDEN_COIN_VALUE = 100; // Constant for clarity
+        const SPAWN_SAFE_DISTANCE = 45;
+        const ATTACK_WAVE_LIFESPAN = 500; // ms
+        const LOCK_ON_RADIUS = 10;
+        const RESPAWN_TIME = 5000; // 5 seconds to respawn
+        const SCROLL_AOE_RADIUS = 20;
+        const SCROLL_DAMAGE = 100;
+
+        // --- Utility Functions ---
+        function showMessage(message) {
+            const msgBox = document.getElementById('message-box');
+            msgBox.textContent = message;
+            msgBox.style.display = 'block';
+            setTimeout(() => {
+                msgBox.style.display = 'none';
+            }, 3000);
+        }
+
+        function endGame(message, isWin = false) {
+            cancelAnimationFrame(animationId);
+            isGameRunning = false;
+            
+            // Only add coins to the total if the player wins
+            if (isWin) {
+                totalCoins += playerCoins;
+                if (totalCoins > maxCoins) {
+                    totalCoins = maxCoins;
+                }
+                localStorage.setItem(totalCoinsKey, totalCoins.toString());
+                showMessage(`${message} You collected ${playerCoins} coins this session! Your total is now ${totalCoins}.`);
+            } else {
+                 showMessage(`${message} You collected ${playerCoins} coins this session. Your total is unchanged.`);
+            }
+
+            // Wait for message to show, then return to shop
+            setTimeout(() => {
+                quitToShop();
+            }, 3000);
+        }
+
+        function updateHealthDisplay() {
+            const healthDisplay = document.getElementById('health-display');
+            healthDisplay.textContent = `Health: ${Math.round(playerHealth)}`;
+            if (healthDisplay) {
+                if (playerHealth <= maxHealth * 0.2) {
+                    healthDisplay.style.color = '#ff0000';
+                } else if (playerHealth <= maxHealth * 0.5) {
+                    healthDisplay.style.color = '#ffa500';
+                } else {
+                    healthDisplay.style.color = '#00ff00';
+                }
+            }
+        }
+        
+        function updateCoinDisplay() {
+            const coinDisplay = document.getElementById('coin-display');
+            if (coinDisplay) {
+                coinDisplay.textContent = `Coins: ${playerCoins}`;
+            }
+        }
+        
+        function updateStartScreenCoins() {
+            const totalCoinsDisplay = document.getElementById('total-coins-display');
+            if (totalCoinsDisplay) {
+                totalCoinsDisplay.textContent = `Total Coins: ${totalCoins}`;
+            }
+        }
+        
+        function updateScrollUI() {
+            if (scrollCountElement) {
+                scrollCountElement.textContent = scrollCount;
+            }
+        }
+
+        /**
+         * Toggles between the main menu and the shop menu.
+         * @param {string} screenId - 'main' to show main menu, 'shop' to show shop.
+         */
+        window.toggleMenuScreen = function(screenId) {
+            const mainMenuScreen = document.getElementById('main-menu-screen');
+            const shopMenuScreen = document.getElementById('shop-menu-screen');
+            if (screenId === 'main') {
+                mainMenuScreen.style.display = 'flex';
+                shopMenuScreen.style.display = 'none';
+                updateStartScreenCoins();
+                loadUpgrades();
+            } else {
+                mainMenuScreen.style.display = 'none';
+                shopMenuScreen.style.display = 'flex';
+                updateShopUI();
+            }
+        }
+
+        window.toggleSettingsMenu = function() {
+            const settingsMenu = document.getElementById('settings-menu');
+            if (isGameRunning) {
+                settingsMenu.style.display = settingsMenu.style.display === 'flex' ? 'none' : 'flex';
+                // Pause/resume game loop
+                if (settingsMenu.style.display === 'flex') {
+                    cancelAnimationFrame(animationId);
+                    document.removeEventListener('keydown', onKeyDown);
+                    document.removeEventListener('keyup', onKeyUp);
+                } else {
+                    document.addEventListener('keydown', onKeyDown, false);
+                    document.addEventListener('keyup', onKeyUp, false);
+                    animate();
+                }
+            }
+        }
+
+        window.quitToShop = function() {
+            cancelAnimationFrame(animationId);
+            isGameRunning = false;
+            
+            // Clean up Three.js and Cannon.js
+            if (renderer && renderer.domElement) {
+                renderer.domElement.remove();
+            }
+            if (world) {
+                // Clear all bodies
+                world.bodies.forEach(body => world.removeBody(body));
+            }
+            // Clear all meshes
+            if (scene) {
+                scene.children.forEach(child => {
+                    scene.remove(child);
+                });
+            }
+            
+            // Re-show the main title screen and shop UI
+            document.getElementById('start-menu').style.display = 'flex';
+            document.getElementById('main-menu-screen').style.display = 'flex';
+            document.getElementById('shop-menu-screen').style.display = 'none';
+            
+            // Hide the game UI
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('settings-icon').style.display = 'none';
+            document.getElementById('settings-menu').style.display = 'none';
+            document.getElementById('health-display').style.display = 'none';
+            document.getElementById('coin-display').style.display = 'none';
+            document.getElementById('info-panel').style.display = 'none';
+            document.getElementById('cooldown-meters').style.display = 'none';
+            document.getElementById('scroll-ui').style.display = 'none';
+
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keyup', onKeyUp);
+            
+            // Reset game state
+            isGameStarted = false;
+            monsters = [];
+            goldenPig = null;
+            goldCoins = [];
+            silverCoins = [];
+            goldenCoins = [];
+            hearts = [];
+
+            loadUpgrades();
+            updateShopUI();
+            updateStartScreenCoins();
+        }
+
+        // --- Shop Functions ---
+        window.buyUpgrade = function(upgradeType) {
+            const data = upgradeData[upgradeType];
+            let currentLevel;
+            switch(upgradeType) {
+                case 'health': currentLevel = healthLevel; break;
+                case 'attack': currentLevel = attackLevel; break;
+                case 'stun': currentLevel = stunLevel; break;
+                case 'scroll': currentLevel = scrollCount; break;
+            }
+            
+            if (currentLevel >= data.maxLevel) {
+                showMessage(`Maximum level reached for ${upgradeType}!`);
+                return;
+            }
+            
+            const cost = data.baseCost + (currentLevel * data.costIncrease);
+            
+            if (totalCoins >= cost) {
+                totalCoins -= cost;
+                switch(upgradeType) {
+                    case 'health': healthLevel++; break;
+                    case 'attack': attackLevel++; break;
+                    case 'stun': stunLevel++; break;
+                    case 'scroll': scrollCount++; break;
+                }
+                saveUpgrades();
+                updateShopUI();
+                updateStartScreenCoins();
+                showMessage(`Purchased ${upgradeType} upgrade!`);
+            } else {
+                showMessage("Not enough coins!");
+            }
+        };
+
+        function updateShopUI() {
+            // Health
+            const healthCost = upgradeData.health.baseCost + (healthLevel * upgradeData.health.costIncrease);
+            const healthStat = upgradeData.health.baseStat + (healthLevel * upgradeData.health.increasePerLevel);
+            const healthLevelElement = document.getElementById('health-level');
+            const healthStatElement = document.getElementById('health-current-stat');
+            const healthCostElement = document.getElementById('health-cost');
+            const buyHealthBtn = document.getElementById('buy-health-btn');
+
+            if (healthLevelElement) healthLevelElement.textContent = `Level: ${healthLevel}/${upgradeData.health.maxLevel}`;
+            if (healthStatElement) healthStatElement.textContent = `Current Health: ${healthStat}`;
+            if (healthCostElement) healthCostElement.textContent = healthCost;
+            if (buyHealthBtn) buyHealthBtn.disabled = healthLevel >= upgradeData.health.maxLevel;
+            
+            // Attack
+            const attackCost = upgradeData.attack.baseCost + (attackLevel * upgradeData.attack.costIncrease);
+            const attackStat = upgradeData.attack.baseStat + (attackLevel * upgradeData.attack.increasePerLevel);
+            const attackLevelElement = document.getElementById('attack-level');
+            const attackStatElement = document.getElementById('attack-current-stat');
+            const attackCostElement = document.getElementById('attack-cost');
+            const buyAttackBtn = document.getElementById('buy-attack-btn');
+
+            if (attackLevelElement) attackLevelElement.textContent = `Level: ${attackLevel}/${upgradeData.attack.maxLevel}`;
+            if (attackStatElement) attackStatElement.textContent = `Current Damage: ${attackStat}`;
+            if (attackCostElement) attackCostElement.textContent = attackCost;
+            if (buyAttackBtn) buyAttackBtn.disabled = attackLevel >= upgradeData.attack.maxLevel;
+            
+            // Stun
+            const stunCost = upgradeData.stun.baseCost + (stunLevel * upgradeData.stun.costIncrease);
+            const stunStat = (upgradeData.stun.baseStat + (stunLevel * upgradeData.stun.increasePerLevel)) / 1000;
+            const stunLevelElement = document.getElementById('stun-level');
+            const stunStatElement = document.getElementById('stun-current-stat');
+            const stunCostElement = document.getElementById('stun-cost');
+            const buyStunBtn = document.getElementById('buy-stun-btn');
+
+            if (stunLevelElement) stunLevelElement.textContent = `Level: ${stunLevel}/${upgradeData.stun.maxLevel}`;
+            if (stunStatElement) stunStatElement.textContent = `Current Duration: ${stunStat}s`;
+            if (stunCostElement) stunCostElement.textContent = stunCost;
+            if (buyStunBtn) buyStunBtn.disabled = stunLevel >= upgradeData.stun.maxLevel;
+            
+            // Scroll
+            const scrollCost = upgradeData.scroll.baseCost + (scrollCount * upgradeData.scroll.costIncrease);
+            const scrollCountElement = document.getElementById('scroll-level');
+            const scrollCostElement = document.getElementById('scroll-cost');
+            const buyScrollBtn = document.getElementById('buy-scroll-btn');
+            
+            if (scrollCountElement) scrollCountElement.textContent = `Count: ${scrollCount}/${upgradeData.scroll.maxLevel}`;
+            if (scrollCostElement) scrollCostElement.textContent = scrollCost;
+            if (buyScrollBtn) buyScrollBtn.disabled = scrollCount >= upgradeData.scroll.maxLevel;
+        }
+
+        function loadUpgrades() {
+            healthLevel = parseInt(localStorage.getItem(upgradeData.health.levelKey)) || 0;
+            attackLevel = parseInt(localStorage.getItem(upgradeData.attack.levelKey)) || 0;
+            stunLevel = parseInt(localStorage.getItem(upgradeData.stun.levelKey)) || 0;
+            scrollCount = parseInt(localStorage.getItem(upgradeData.scroll.levelKey)) || 0;
+        }
+
+        function saveUpgrades() {
+            localStorage.setItem(upgradeData.health.levelKey, healthLevel);
+            localStorage.setItem(upgradeData.attack.levelKey, attackLevel);
+            localStorage.setItem(upgradeData.stun.levelKey, stunLevel);
+            localStorage.setItem(upgradeData.scroll.levelKey, scrollCount);
+            localStorage.setItem(totalCoinsKey, totalCoins.toString());
+        }
+
+        // --- Maze Generation (Simple Recursive Backtracking) ---
+        function generateMaze(width, height) {
+            const maze = new Array(width).fill(null).map(() => new Array(height).fill(true));
+            const stack = [];
+            const visited = new Set();
+            
+            let startX = 1;
+            let startY = 1;
+
+            stack.push([startX, startY]);
+            visited.add(`${startX},${startY}`);
+            maze[startX][startY] = false;
+
+            while (stack.length > 0) {
+                const [x, y] = stack[stack.length - 1];
+                const neighbors = [];
+
+                const possibleMoves = [[x, y - 2], [x, y + 2], [x - 2, y], [x + 2, y]];
+                for (const [nx, ny] of possibleMoves) {
+                    if (nx > 0 && nx < width - 1 && ny > 0 && ny < height - 1 && !visited.has(`${nx},${ny}`)) {
+                        neighbors.push([nx, ny]);
+                    }
+                }
+
+                if (neighbors.length > 0) {
+                    const [nx, ny] = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    visited.add(`${nx},${ny}`);
+                    maze[nx][ny] = false;
+
+                    const wallX = (x + nx) / 2;
+                    const wallY = (y + ny) / 2;
+                    maze[wallX][wallY] = false;
+                    stack.push([nx, ny]);
+                } else {
+                    stack.pop();
+                }
+            }
+            
+            for (let i = 0; i < width; i++) {
+                maze[i][0] = true;
+                maze[i][height - 1] = true;
+            }
+            for (let j = 0; j < height; j++) {
+                maze[0][j] = true;
+                maze[width - 1][j] = true;
+            }
+
+            return maze;
+        }
+
+        // --- Initialization ---
+        function init() {
+            if (isGameStarted) return; // Prevent re-initialization
+            isGameStarted = true;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x303030);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.up.set(0, -1, 0);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.domElement.id = 'game-canvas';
+            document.getElementById('game-area').appendChild(renderer.domElement);
+
+            world = new CANNON.World();
+            world.gravity.set(0, -9.82, 0);
+
+            const groundMaterial = new CANNON.Material();
+            const groundBody = new CANNON.Body({
+                mass: 0,
+                shape: new CANNON.Plane(),
+                material: groundMaterial
+            });
+            groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            world.addBody(groundBody);
+
+            const groundMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(MAZE_SIZE * WALL_WIDTH, MAZE_SIZE * WALL_WIDTH),
+                new THREE.MeshStandardMaterial({ color: 0x5a5a5a, side: THREE.DoubleSide })
+            );
+            groundMesh.rotation.x = -Math.PI / 2;
+            scene.add(groundMesh);
+
+            mazeData = generateMaze(MAZE_SIZE, MAZE_SIZE);
+            buildMaze(mazeData);
+
+            const startX = 1;
+            const startY = 1;
+
+            const playerGeometry = new THREE.BoxGeometry(PLAYER_RADIUS * 2, PLAYER_HEIGHT, PLAYER_RADIUS * 2);
+            const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x66ccff });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.set(startX * WALL_WIDTH, PLAYER_HEIGHT / 2, startY * WALL_WIDTH);
+            player.rotation.y = Math.PI;
+            scene.add(player);
+            
+            playerBody = new CANNON.Body({
+                mass: 5,
+                shape: new CANNON.Box(new CANNON.Vec3(PLAYER_RADIUS, PLAYER_HEIGHT / 2, PLAYER_RADIUS)),
+                position: new CANNON.Vec3(startX * WALL_WIDTH, PLAYER_HEIGHT / 2, startY * WALL_WIDTH)
+            });
+            playerBody.angularFactor.set(0, 0, 0);
+            playerBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI);
+            world.addBody(playerBody);
+
+            const finishGeometry = new THREE.BoxGeometry(WALL_WIDTH, 1, WALL_WIDTH);
+            const finishMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+            finishLine = new THREE.Mesh(finishGeometry, finishMaterial);
+            const finishX = MAZE_SIZE - 2;
+            const finishY = MAZE_SIZE - 2;
+            finishLine.position.set(finishX * WALL_WIDTH, 0.5, finishY * WALL_WIDTH);
+            scene.add(finishLine);
+
+            const finishShape = new CANNON.Box(new CANNON.Vec3(WALL_WIDTH / 2, 0.5, WALL_WIDTH / 2));
+            finishLineBody = new CANNON.Body({
+                mass: 0,
+                isTrigger: true,
+                shape: finishShape,
+                position: new CANNON.Vec3(finishX * WALL_WIDTH, 0.5, finishY * WALL_WIDTH)
+            });
+            world.addBody(finishLineBody);
+
+            createMonsters(NUM_MONSTERS);
+            lastGoldenPigSpawnTime = performance.now(); // Initialize timer
+
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 15);
+            scene.add(directionalLight);
+
+            playerBody.addEventListener('collide', onPlayerCollision);
+
+            // Get references to the cooldown meter elements and scroll UI
+            stunMeterFill = document.getElementById('stun-meter-fill');
+            attackMeterFill = document.getElementById('attack-meter-fill');
+            scrollCountElement = document.getElementById('scroll-ui-count');
+
+            updateHealthDisplay();
+            updateCoinDisplay();
+            updateScrollUI();
+
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        // --- Collision Handler ---
+        function onPlayerCollision(event) {
+            const otherBody = event.body;
+            const now = performance.now();
+
+            if (!isGameRunning) return;
+
+            const collidingMonster = monsters.find(m => m.body === otherBody);
+            if (collidingMonster) {
+                if (now - lastDamageTime > PLAYER_DAMAGE_COOLDOWN) {
+                    const damage = collidingMonster.monsterType === 'red' ? RED_PIG_DAMAGE : PINK_PIG_DAMAGE;
+                    playerHealth -= damage;
+                    updateHealthDisplay();
+                    showMessage(`Ouch! Lost ${damage} health!`);
+                    lastDamageTime = now;
+
+                    if (playerHealth <= 0) {
+                        endGame("You ran out of health! Game Over.", false); // Player died
+                        return;
+                    }
+                }
+                return;
+            }
+            
+            // Handle collision with the golden pig directly to ensure the coin spawns
+            if (goldenPig && goldenPig.body === otherBody) {
+                spawnGoldenCoin(goldenPig.mesh.position);
+                removeGoldenPig();
+                showMessage("You caught the Golden Pig! A golden coin appeared!");
+                return;
+            }
+
+            const collidedCoin = goldCoins.find(coin => coin.body === otherBody);
+            if (collidedCoin) {
+                removeCoin(collidedCoin);
+                playerCoins += PINK_COIN_VALUE;
+                updateCoinDisplay();
+                showMessage(`Picked up a brown coin!`);
+                return;
+            }
+
+            const collidedSilverCoin = silverCoins.find(coin => coin.body === otherBody);
+            if (collidedSilverCoin) {
+                removeSilverCoin(collidedSilverCoin);
+                playerCoins += SILVER_COIN_VALUE;
+                updateCoinDisplay();
+                showMessage(`Picked up a silver coin! +${SILVER_COIN_VALUE} coins!`);
+                return;
+            }
+            
+            const collidedGoldenCoin = goldenCoins.find(coin => coin.body === otherBody);
+            if (collidedGoldenCoin) {
+                removeGoldenCoin(collidedGoldenCoin);
+                playerCoins += GOLDEN_COIN_VALUE;
+                updateCoinDisplay();
+                showMessage("Collected a golden coin! +100 coins!");
+                return;
+            }
+            
+            const collidedHeart = hearts.find(h => h.body === otherBody);
+            if (collidedHeart) {
+                removeHeart(collidedHeart);
+                const healthGain = maxHealth * 0.25;
+                playerHealth = Math.min(playerHealth + healthGain, maxHealth);
+                updateHealthDisplay();
+                showMessage(`Found a heart! Restored ${Math.round(healthGain)} health!`);
+                return;
+            }
+
+            if (otherBody === finishLineBody) {
+                endGame("You won! Congratulations!", true); // Player won
+            }
+        }
+
+        function removeMonster(monster) {
+            // Drop a coin based on monster type
+            if (monster.monsterType === 'red') {
+                spawnSilverCoin(monster.mesh.position);
+            } else {
+                spawnGoldCoin(monster.mesh.position);
+            }
+            
+            // 50% chance to drop a heart
+            if (Math.random() < 0.50) {
+                spawnHeart(monster.mesh.position);
+            }
+
+            scene.remove(monster.mesh);
+            bodiesToRemove.push(monster.body);
+            
+            monster.state = 'dead';
+            
+            scheduleRespawn(monster);
+        }
+
+        function scheduleRespawn(monster) {
+            setTimeout(() => {
+                let x, y;
+                let distanceSquared;
+                do {
+                    // Check if the randomly selected grid cell is a valid pathway
+                    x = Math.floor(Math.random() * MAZE_SIZE);
+                    y = Math.floor(Math.random() * MAZE_SIZE);
+                    
+                    const playerPos = playerBody.position;
+                    const respawnWorldX = x * WALL_WIDTH;
+                    const respawnWorldY = y * WALL_WIDTH;
+
+                    const dx = respawnWorldX - playerPos.x;
+                    const dy = respawnWorldY - playerPos.z;
+                    distanceSquared = dx * dx + dy * dy;
+
+                } while (mazeData[x][y] || distanceSquared < SPAWN_SAFE_DISTANCE * SPAWN_SAFE_DISTANCE);
+
+                const health = monster.monsterType === 'red' ? RED_PIG_HEALTH : PINK_PIG_HEALTH;
+                monster.health = health;
+                monster.state = 'patrol';
+                monster.body.position.set(x * WALL_WIDTH, MONSTER_HEIGHT / 2, y * WALL_WIDTH);
+                
+                scene.add(monster.mesh);
+                world.addBody(monster.body);
+
+                monster.lastActionTime = performance.now();
+
+            }, RESPAWN_TIME);
+        }
+
+        function spawnGoldenPig() {
+            if (goldenPig) return; // Only one at a time
+
+            let x, y;
+            let distanceSquared;
+            do {
+                // Check if the randomly selected grid cell is a valid pathway
+                x = Math.floor(Math.random() * MAZE_SIZE);
+                y = Math.floor(Math.random() * MAZE_SIZE);
+                
+                const playerPos = playerBody.position;
+                const respawnWorldX = x * WALL_WIDTH;
+                const respawnWorldY = y * WALL_WIDTH;
+
+                const dx = respawnWorldX - playerPos.x;
+                const dy = respawnWorldY - playerPos.z;
+                distanceSquared = dx * dx + dy * dy;
+
+            } while (mazeData[x][y] || distanceSquared < SPAWN_SAFE_DISTANCE * SPAWN_SAFE_DISTANCE);
+
+            const goldenPigGeometry = new THREE.BoxGeometry(MONSTER_RADIUS * 2, MONSTER_HEIGHT, MONSTER_RADIUS * 2);
+            const goldenPigMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD700 }); // Gold color
+            const goldenPigMesh = new THREE.Mesh(goldenPigGeometry, goldenPigMaterial);
+            goldenPigMesh.position.set(x * WALL_WIDTH, MONSTER_HEIGHT / 2, y * WALL_WIDTH);
+            scene.add(goldenPigMesh);
+
+            const goldenPigBody = new CANNON.Body({
+                mass: 5,
+                shape: new CANNON.Box(new CANNON.Vec3(MONSTER_RADIUS, MONSTER_HEIGHT / 2, MONSTER_RADIUS)),
+                position: new CANNON.Vec3(x * WALL_WIDTH, MONSTER_HEIGHT / 2, y * WALL_WIDTH)
+            });
+            goldenPigBody.angularFactor.set(0, 0, 0);
+            world.addBody(goldenPigBody);
+            
+            goldenPig = {
+                mesh: goldenPigMesh,
+                body: goldenPigBody,
+                state: 'flee'
+            };
+            
+            showMessage("A Golden Pig has appeared!");
+        }
+
+        function removeGoldenPig() {
+            if (!goldenPig) return;
+            scene.remove(goldenPig.mesh);
+            bodiesToRemove.push(goldenPig.body);
+            goldenPig = null;
+        }
+
+        function spawnGoldCoin(position) {
+            const coinGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 16);
+            const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xA0522D });
+            const coinMesh = new THREE.Mesh(coinGeometry, coinMaterial);
+            
+            coinMesh.position.set(position.x, 0.05, position.z);
+            coinMesh.rotation.x = Math.PI / 2;
+            scene.add(coinMesh);
+
+            const coinShape = new CANNON.Cylinder(0.5, 0.5, 0.1, 16);
+            const coinBody = new CANNON.Body({
+                mass: 0,
+                isTrigger: true,
+                shape: coinShape,
+                position: new CANNON.Vec3(position.x, 0.05, position.z)
+            });
+            world.addBody(coinBody);
+
+            goldCoins.push({
+                mesh: coinMesh,
+                body: coinBody
+            });
+        }
+        
+        function spawnSilverCoin(position) {
+            const coinGeometry = new THREE.CylinderGeometry(0.7, 0.7, 0.1, 16);
+            const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xC0C0C0 });
+            const coinMesh = new THREE.Mesh(coinGeometry, coinMaterial);
+            
+            coinMesh.position.set(position.x, 0.05, position.z);
+            coinMesh.rotation.x = Math.PI / 2;
+            scene.add(coinMesh);
+
+            const coinShape = new CANNON.Cylinder(0.7, 0.7, 0.1, 16);
+            const coinBody = new CANNON.Body({
+                mass: 0,
+                isTrigger: true,
+                shape: coinShape,
+                position: new CANNON.Vec3(position.x, 0.05, position.z)
+            });
+            world.addBody(coinBody);
+
+            silverCoins.push({
+                mesh: coinMesh,
+                body: coinBody
+            });
+        }
+
+        function spawnGoldenCoin(position) {
+            const coinGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 32);
+            const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD700 }); // Gold color
+            const coinMesh = new THREE.Mesh(coinGeometry, coinMaterial);
+            
+            coinMesh.position.set(position.x, 0.1, position.z);
+            coinMesh.rotation.x = Math.PI / 2;
+            scene.add(coinMesh);
+
+            const coinShape = new CANNON.Cylinder(1, 1, 0.2, 32);
+            const coinBody = new CANNON.Body({
+                mass: 0,
+                isTrigger: true,
+                shape: coinShape,
+                position: new CANNON.Vec3(position.x, 0.1, position.z)
+            });
+            world.addBody(coinBody);
+
+            goldenCoins.push({
+                mesh: coinMesh,
+                body: coinBody
+            });
+        }
+
+        /**
+         * Spawns a heart at the given position.
+         * @param {THREE.Vector3} position The position to spawn the heart.
+         */
+        function spawnHeart(position) {
+            const heartGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const heartMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
+            heartMesh.position.copy(position);
+            scene.add(heartMesh);
+
+            const heartShape = new CANNON.Box(new CANNON.Vec3(0.75, 0.75, 0.75));
+            const heartBody = new CANNON.Body({
+                mass: 0,
+                isTrigger: true,
+                shape: heartShape,
+                position: new CANNON.Vec3(position.x, position.y, position.z)
+            });
+            world.addBody(heartBody);
+            
+            hearts.push({
+                mesh: heartMesh,
+                body: heartBody
+            });
+        }
+        
+        function removeCoin(coin) {
+            scene.remove(coin.mesh);
+            coin.mesh.geometry.dispose();
+            coin.mesh.material.dispose();
+            
+            bodiesToRemove.push(coin.body);
+            goldCoins = goldCoins.filter(c => c !== coin);
+        }
+
+        function removeSilverCoin(coin) {
+            scene.remove(coin.mesh);
+            coin.mesh.geometry.dispose();
+            coin.mesh.material.dispose();
+            
+            bodiesToRemove.push(coin.body);
+            silverCoins = silverCoins.filter(c => c !== coin);
+        }
+
+        function removeGoldenCoin(coin) {
+            scene.remove(coin.mesh);
+            coin.mesh.geometry.dispose();
+            coin.mesh.material.dispose();
+            
+            bodiesToRemove.push(coin.body);
+            goldenCoins = goldenCoins.filter(c => c !== coin);
+        }
+        
+        /**
+         * Removes a heart from the game.
+         * @param {object} heart The heart object to remove.
+         */
+        function removeHeart(heart) {
+            scene.remove(heart.mesh);
+            heart.mesh.geometry.dispose();
+            heart.mesh.material.dispose();
+
+            bodiesToRemove.push(heart.body);
+            hearts = hearts.filter(h => h !== heart);
+        }
+
+        function removeAttackWave(waveToRemove) {
+            const index = activeAttackWaves.indexOf(waveToRemove);
+            if (index !== -1) {
+                bodiesToRemove.push(waveToRemove.body);
+                scene.remove(waveToRemove.mesh);
+                waveToRemove.mesh.geometry.dispose();
+                waveToRemove.mesh.material.dispose();
+                activeAttackWaves.splice(index, 1);
+            }
+        }
+        
+        function activateStun() {
+            if (!isGameRunning) return;
+            
+            const now = performance.now();
+            if (now - lastStunTime >= STUN_COOLDOWN) {
+                const playerPos = playerBody.position;
+
+                const stunPulseGeometry = new THREE.SphereGeometry(1, 32, 32);
+                const stunPulseMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x66ccff,
+                    transparent: true,
+                    opacity: 0.5,
+                    blending: THREE.AdditiveBlending
+                });
+                const stunPulseMesh = new THREE.Mesh(stunPulseGeometry, stunPulseMaterial);
+                stunPulseMesh.position.copy(playerPos);
+                scene.add(stunPulseMesh);
+
+                const pulseStartTime = now;
+                function animatePulse() {
+                    const elapsed = performance.now() - pulseStartTime;
+                    const progress = elapsed / 500;
+                    const scale = 1 + progress * (STUN_RADIUS - 1);
+                    stunPulseMesh.scale.set(scale, scale, scale);
+                    stunPulseMesh.material.opacity = 0.5 - progress * 0.5;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animatePulse);
+                    } else {
+                        scene.remove(stunPulseMesh);
+                        stunPulseMesh.geometry.dispose();
+                        stunPulseMesh.material.dispose();
+                    }
+                }
+                animatePulse();
+
+                monsters.forEach(monster => {
+                    if (monster.state === 'dead') return;
+
+                    const distance = monster.body.position.distanceTo(playerPos);
+                    if (distance <= STUN_RADIUS) {
+                        monster.state = 'stunned';
+                        monster.stunEndTime = now + STUN_DURATION;
+                        
+                        if (STUN_DAMAGE > 0) {
+                            monster.health -= STUN_DAMAGE;
+                            showMessage(`You hit a pig! It has ${monster.health} health left.`);
+                        } else {
+                            showMessage("You stunned a pig!");
+                        }
+                        
+                        if (monster.health <= 0) {
+                            removeMonster(monster);
+                            showMessage("You defeated a pig!");
+                        } else {
+                            const originalColor = monster.monsterType === 'red' ? 0xff0000 : 0xff69b4;
+                            monster.mesh.material.color.setHex(0xffffff);
+                            setTimeout(() => {
+                                monster.mesh.material.color.setHex(originalColor);
+                            }, 100);
+                        }
+                    }
+                });
+
+                lastStunTime = now;
+            } else {
+                showMessage("Stun is on cooldown!");
+            }
+        }
+        
+        function activateAttack() {
+            if (!isGameRunning) return;
+            const now = performance.now();
+            if (now - lastAttackTime >= ATTACK_COOLDOWN) {
+                let targetDirection = new CANNON.Vec3();
+                let foundTarget = false;
+
+                let closestMonster = null;
+                let minDistance = LOCK_ON_RADIUS;
+                const playerPos = playerBody.position;
+                
+                monsters.forEach(monster => {
+                    if (monster.state !== 'dead') {
+                        const distance = playerPos.distanceTo(monster.body.position);
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestMonster = monster;
+                        }
+                    }
+                });
+
+                if (closestMonster) {
+                    closestMonster.body.position.vsub(playerPos, targetDirection);
+                    targetDirection.normalize();
+                    foundTarget = true;
+                    showMessage("Locked on to a pig!");
+                } else {
+                    const playerDirectionThree = new THREE.Vector3(0, 0, 1);
+                    player.getWorldDirection(playerDirectionThree);
+                    targetDirection = new CANNON.Vec3(playerDirectionThree.x, 0, playerDirectionThree.z);
+                }
+                
+                const waveOffset = new CANNON.Vec3();
+                targetDirection.scale(2, waveOffset);
+                const wavePosition = playerBody.position.vadd(waveOffset);
+
+                const waveGeometry = new THREE.BoxGeometry(2, 2, 5);
+                const waveMaterial = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.7 });
+                const waveMesh = new THREE.Mesh(waveGeometry, waveMaterial);
+                waveMesh.position.copy(wavePosition);
+                scene.add(waveMesh);
+
+                const waveShape = new CANNON.Box(new CANNON.Vec3(1, 1, 2.5));
+                const waveBody = new CANNON.Body({
+                    mass: 0,
+                    isTrigger: true,
+                    shape: waveShape,
+                    position: wavePosition
+                });
+
+                const angle = Math.atan2(targetDirection.x, targetDirection.z);
+                waveBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), angle);
+                waveMesh.rotation.y = angle;
+                
+                const waveSpeed = 20;
+                const forwardVelocity = new CANNON.Vec3();
+                targetDirection.scale(waveSpeed, forwardVelocity);
+                waveBody.velocity.x = forwardVelocity.x;
+                waveBody.velocity.z = forwardVelocity.z;
+
+                const attackWave = {
+                    mesh: waveMesh,
+                    body: waveBody,
+                    creationTime: now,
+                    hasHit: false
+                };
+                activeAttackWaves.push(attackWave);
+
+                waveBody.addEventListener('collide', function(event) {
+                    if (attackWave.hasHit) return;
+
+                    const otherBody = event.body;
+                    const hitMonster = monsters.find(m => m.body === otherBody);
+                    if (hitMonster) {
+                        hitMonster.health -= ATTACK_DAMAGE;
+                        showMessage(`You hit a pig with your attack! It has ${hitMonster.health} health left.`);
+                        if (hitMonster.health <= 0) {
+                            removeMonster(hitMonster);
+                            showMessage("You defeated a pig with your attack!");
+                        }
+                        attackWave.hasHit = true;
+                        removeAttackWave(attackWave);
+                    }
+                });
+
+                world.addBody(waveBody);
+
+                lastAttackTime = now;
+            } else {
+                showMessage("Attack is on cooldown!");
+            }
+        }
+        
+        function useMagicScroll() {
+            if (!isGameRunning) return;
+            
+            if (scrollCount <= 0) {
+                showMessage("You have no magic scrolls!");
+                return;
+            }
+            
+            scrollCount--;
+            saveUpgrades();
+            updateScrollUI();
+            
+            const now = performance.now();
+            const playerPos = playerBody.position;
+            
+            // Create the pulsing green sphere effect
+            const pulseRadius = 1;
+            const pulseMaxRadius = SCROLL_AOE_RADIUS;
+            const pulseDuration = 750;
+            
+            const pulseGeometry = new THREE.SphereGeometry(pulseRadius, 32, 32);
+            const pulseMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.5,
+                blending: THREE.AdditiveBlending
+            });
+            const pulseMesh = new THREE.Mesh(pulseGeometry, pulseMaterial);
+            pulseMesh.position.copy(playerPos);
+            scene.add(pulseMesh);
+            
+            const pulseStartTime = now;
+            const pulseId = setInterval(() => {
+                const elapsed = performance.now() - pulseStartTime;
+                const progress = elapsed / pulseDuration;
+                
+                if (progress >= 1) {
+                    clearInterval(pulseId);
+                    scene.remove(pulseMesh);
+                    pulseMesh.geometry.dispose();
+                    pulseMesh.material.dispose();
+                    return;
+                }
+                
+                const scale = pulseRadius + progress * (pulseMaxRadius - pulseRadius);
+                pulseMesh.scale.set(scale, scale, scale);
+                pulseMesh.material.opacity = 0.5 - progress * 0.5;
+            }, 16);
+
+            // Apply damage to monsters
+            monsters.forEach(monster => {
+                if (monster.state === 'dead') return;
+                
+                const distance = monster.body.position.distanceTo(playerPos);
+                if (distance <= SCROLL_AOE_RADIUS) {
+                    monster.health -= SCROLL_DAMAGE;
+                    showMessage(`You hit a pig with the scroll! It has ${monster.health} health left.`);
+                    
+                    if (monster.health <= 0) {
+                        removeMonster(monster);
+                        showMessage("You defeated a pig with the magic scroll!");
+                    } else {
+                        // Flash white to show damage
+                        const originalColor = monster.monsterType === 'red' ? 0xff0000 : 0xff69b4;
+                        monster.mesh.material.color.setHex(0xffffff);
+                        setTimeout(() => {
+                            monster.mesh.material.color.setHex(originalColor);
+                        }, 100);
+                    }
+                }
+            });
+        }
+
+        function createMonsters(num) {
+            
+            const playerStartX = 1 * WALL_WIDTH;
+            const playerStartY = 1 * WALL_WIDTH;
+
+            const minDistanceSquared = SPAWN_SAFE_DISTANCE * SPAWN_SAFE_DISTANCE;
+            
+            // Spawn the red pigs in the corners not used by the player
+            const redPigSpawns = [
+                { x: 1, y: MAZE_SIZE - 2, health: RED_PIG_HEALTH, damage: RED_PIG_DAMAGE },
+                { x: MAZE_SIZE - 2, y: 1, health: RED_PIG_HEALTH, damage: RED_PIG_DAMAGE },
+                { x: MAZE_SIZE - 2, y: MAZE_SIZE - 2, health: RED_PIG_HEALTH, damage: RED_PIG_DAMAGE }
+            ];
+
+            redPigSpawns.forEach(pos => {
+                const monsterMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const monsterGeometry = new THREE.BoxGeometry(MONSTER_RADIUS * 2, MONSTER_HEIGHT, MONSTER_RADIUS * 2);
+                
+                const monsterMesh = new THREE.Mesh(monsterGeometry, monsterMaterial);
+                monsterMesh.position.set(pos.x * WALL_WIDTH, MONSTER_HEIGHT / 2, pos.y * WALL_WIDTH);
+                scene.add(monsterMesh);
+
+                const monsterBody = new CANNON.Body({
+                    mass: 5,
+                    shape: new CANNON.Box(new CANNON.Vec3(MONSTER_RADIUS, MONSTER_HEIGHT / 2, MONSTER_RADIUS)),
+                    position: new CANNON.Vec3(pos.x * WALL_WIDTH, MONSTER_HEIGHT / 2, pos.y * WALL_WIDTH)
+                });
+                monsterBody.angularFactor.set(0, 0, 0);
+                world.addBody(monsterBody);
+
+                monsters.push({
+                    mesh: monsterMesh,
+                    body: monsterBody,
+                    state: 'patrol',
+                    targetPosition: new CANNON.Vec3(),
+                    lastActionTime: 0,
+                    stunEndTime: 0,
+                    health: pos.health,
+                    damage: pos.damage,
+                    monsterType: 'red'
+                });
+            });
+
+            // Spawn the regular pink pigs
+            for (let i = 0; i < num; i++) {
+                let x, y;
+                let distanceSquared;
+                do {
+                    // Check if the randomly selected grid cell is a valid pathway
+                    x = Math.floor(Math.random() * MAZE_SIZE);
+                    y = Math.floor(Math.random() * MAZE_SIZE);
+                    
+                    const monsterWorldX = x * WALL_WIDTH;
+                    const monsterWorldY = y * WALL_WIDTH;
+                    
+                    const dx = monsterWorldX - playerStartX;
+                    const dy = monsterWorldY - playerStartY;
+                    distanceSquared = dx * dx + dy * dy;
+
+                } while (mazeData[x][y] || (x === 1 && y === 1) || distanceSquared < minDistanceSquared);
+
+                const monsterMaterial = new THREE.MeshStandardMaterial({ color: 0xff69b4 });
+                const monsterGeometry = new THREE.BoxGeometry(MONSTER_RADIUS * 2, MONSTER_HEIGHT, MONSTER_RADIUS * 2);
+                
+                const monsterMesh = new THREE.Mesh(monsterGeometry, monsterMaterial);
+                monsterMesh.position.set(x * WALL_WIDTH, MONSTER_HEIGHT / 2, y * WALL_WIDTH);
+                scene.add(monsterMesh);
+
+                const monsterBody = new CANNON.Body({
+                    mass: 5,
+                    shape: new CANNON.Box(new CANNON.Vec3(MONSTER_RADIUS, MONSTER_HEIGHT / 2, MONSTER_RADIUS)),
+                    position: new CANNON.Vec3(x * WALL_WIDTH, MONSTER_HEIGHT / 2, y * WALL_WIDTH)
+                });
+                monsterBody.angularFactor.set(0, 0, 0);
+                world.addBody(monsterBody);
+
+                monsters.push({
+                    mesh: monsterMesh,
+                    body: monsterBody,
+                    state: 'patrol',
+                    targetPosition: new CANNON.Vec3(),
+                    lastActionTime: 0,
+                    stunEndTime: 0,
+                    health: PINK_PIG_HEALTH,
+                    damage: PINK_PIG_DAMAGE,
+                    monsterType: 'pink'
+                });
+            }
+        }
+
+        function updateMonsters() {
+            const playerPos = playerBody.position;
+            const now = performance.now();
+
+            monsters.forEach(monster => {
+                if (monster.state === 'dead') {
+                    return;
+                }
+
+                if (monster.state === 'stunned') {
+                    if (now < monster.stunEndTime) {
+                        monster.body.velocity.x = 0;
+                        monster.body.velocity.z = 0;
+                    } else {
+                        monster.state = 'patrol';
+                        monster.lastActionTime = now;
+                    }
+                } else {
+                    const distanceToPlayer = monster.body.position.distanceTo(playerPos);
+
+                    if (monster.state === 'patrol') {
+                        if (distanceToPlayer < AGGRO_DISTANCE) {
+                            monster.state = 'charge';
+                            monster.lastActionTime = now;
+                        } else if (now - monster.lastActionTime > 3000) {
+                            const randomAngle = Math.random() * Math.PI * 2;
+                            const randomOffset = 10;
+                            monster.targetPosition.set(
+                                monster.body.position.x + Math.cos(randomAngle) * randomOffset,
+                                monster.body.position.y,
+                                monster.body.position.z + Math.sin(randomAngle) * randomOffset
+                            );
+                            monster.lastActionTime = now;
+                        }
+                        
+                        const direction = new CANNON.Vec3();
+                        monster.targetPosition.vsub(monster.body.position, direction);
+                        direction.normalize();
+                        direction.scale(PATROL_SPEED, direction);
+                        monster.body.velocity.x = direction.x;
+                        monster.body.velocity.z = direction.z;
+
+                    } else if (monster.state === 'charge') {
+                        if (now - monster.lastActionTime > CHARGE_DURATION) {
+                            monster.state = 'patrol';
+                            monster.lastActionTime = now;
+                        } else {
+                            const direction = new CANNON.Vec3();
+                            playerPos.vsub(monster.body.position, direction);
+                            direction.normalize();
+                            direction.scale(CHARGE_SPEED, direction);
+                            monster.body.velocity.x = direction.x;
+                            monster.body.velocity.z = direction.z;
+                        }
+                    }
+                }
+                monster.mesh.position.copy(monster.body.position);
+            });
+        }
+        
+        function updateGoldenPig() {
+            if (!goldenPig) {
+                const now = performance.now();
+                if (now - lastGoldenPigSpawnTime > GOLDEN_PIG_SPAWN_COOLDOWN) {
+                    spawnGoldenPig();
+                    lastGoldenPigSpawnTime = now;
+                }
+                return;
+            }
+
+            const playerPos = playerBody.position;
+            const goldenPigPos = goldenPig.body.position;
+            const distanceToPlayer = goldenPigPos.distanceTo(playerPos);
+
+            if (distanceToPlayer < GOLDEN_PIG_ESCAPE_DISTANCE) {
+                const fleeDirection = new CANNON.Vec3();
+                playerPos.vsub(goldenPigPos, fleeDirection);
+                fleeDirection.normalize();
+                fleeDirection.scale(-GOLDEN_PIG_FLEE_SPEED, fleeDirection); // Move away
+                goldenPig.body.velocity.x = fleeDirection.x;
+                goldenPig.body.velocity.z = fleeDirection.z;
+            } else {
+                 goldenPig.body.velocity.x = 0;
+                 goldenPig.body.velocity.z = 0;
+            }
+            
+            goldenPig.mesh.position.copy(goldenPig.body.position);
+        }
+
+        function buildMaze(maze) {
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x8a5a4c });
+            const wallShape = new CANNON.Box(new CANNON.Vec3(WALL_WIDTH / 2, WALL_HEIGHT / 2, WALL_WIDTH / 2));
+            const wallGeometry = new THREE.BoxGeometry(WALL_WIDTH, WALL_HEIGHT, WALL_WIDTH);
+            
+            for (let x = 0; x < maze.length; x++) {
+                for (let y = 0; y < maze[x].length; y++) {
+                    if (maze[x][y]) {
+                        const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+                        wallMesh.position.set(x * WALL_WIDTH, WALL_HEIGHT / 2, y * WALL_WIDTH);
+                        scene.add(wallMesh);
+                        walls.push(wallMesh);
+                        
+                        const wallBody = new CANNON.Body({
+                            mass: 0,
+                            shape: wallShape,
+                            position: new CANNON.Vec3(x * WALL_WIDTH, WALL_HEIGHT / 2, y * WALL_WIDTH)
+                        });
+                        world.addBody(wallBody);
+                    }
+                }
+            }
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function onKeyDown(event) {
+            keys[event.key] = true;
+            if (event.key === ' ') {
+                activateStun();
+            }
+            if (event.key === 'e' || event.key === 'E') {
+                activateAttack();
+            }
+            if (event.key === 'q' || event.key === 'Q') {
+                useMagicScroll();
+            }
+        }
+
+        function onKeyUp(event) {
+            keys[event.key] = false;
+        }
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+
+            world.step(TIME_STEP);
+
+            for (const body of bodiesToRemove) {
+                world.removeBody(body);
+            }
+            bodiesToRemove.length = 0;
+
+            let targetQuaternion = new THREE.Quaternion();
+            if (keys['w'] || keys['W']) {
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0);
+            }
+            if (keys['s'] || keys['S']) {
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+            }
+            if (keys['a'] || keys['A']) {
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+            }
+            if (keys['d'] || keys['D']) {
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
+            }
+            player.quaternion.slerp(targetQuaternion, 0.1);
+
+            let currentSpeed = maxSpeed;
+            if (keys['Shift']) {
+                currentSpeed *= runSpeedMultiplier;
+            }
+            const velocity = new CANNON.Vec3();
+            if (keys['w'] || keys['W']) {
+                velocity.z += currentSpeed;
+            }
+            if (keys['s'] || keys['S']) {
+                velocity.z -= currentSpeed;
+            }
+            if (keys['a'] || keys['A']) {
+                velocity.x += currentSpeed;
+            }
+            if (keys['d'] || keys['D']) {
+                velocity.x -= currentSpeed;
+            }
+            playerBody.velocity.x = velocity.x;
+            playerBody.velocity.z = velocity.z;
+            playerBody.velocity.y = 0;
+
+            player.position.copy(playerBody.position);
+            playerBody.quaternion.copy(player.quaternion);
+            
+            const now = performance.now();
+            for (let i = activeAttackWaves.length - 1; i >= 0; i--) {
+                const wave = activeAttackWaves[i];
+                if (now - wave.creationTime > ATTACK_WAVE_LIFESPAN) {
+                    removeAttackWave(wave);
+                }
+            }
+            
+            // --- Cooldown Meter Logic ---
+            const stunProgress = Math.min((now - lastStunTime) / STUN_COOLDOWN, 1);
+            stunMeterFill.style.width = `${stunProgress * 100}%`;
+            
+            const attackProgress = Math.min((now - lastAttackTime) / ATTACK_COOLDOWN, 1);
+            attackMeterFill.style.width = `${attackProgress * 100}%`;
+            // --- End Cooldown Meter Logic ---
+
+            updateMonsters();
+            updateGoldenPig();
+
+            camera.position.copy(player.position).add(cameraOffset);
+            camera.lookAt(player.position);
+
+            renderer.render(scene, camera);
+        }
+
+        // CORRECTED FUNCTION: This now only hides the instructions panel.
+        function hideInfoPanel() {
+            const infoPanel = document.getElementById('info-panel');
+            infoPanel.style.opacity = '0';
+            setTimeout(() => {
+                infoPanel.style.display = 'none';
+            }, 1000); // Wait for the transition to finish
+        }
+
+        window.startGame = function() {
+            try {
+                // Hiding the start menu
+                document.getElementById('start-menu').style.display = 'none';
+                
+                // Showing the game UI
+                document.getElementById('game-area').style.display = 'flex';
+                document.getElementById('info-panel').style.display = 'block';
+                document.getElementById('settings-icon').style.display = 'block';
+                document.getElementById('health-display').style.display = 'block';
+                document.getElementById('coin-display').style.display = 'block';
+                document.getElementById('cooldown-meters').style.display = 'flex';
+                document.getElementById('scroll-ui').style.display = 'flex';
+                
+                // Ensure opacity is reset for the new game
+                document.getElementById('info-panel').style.opacity = '1';
+                document.getElementById('health-display').style.opacity = '1';
+                document.getElementById('coin-display').style.opacity = '1';
+
+                isGameRunning = true;
+                playerCoins = 0;
+
+                maxHealth = upgradeData.health.baseStat + (healthLevel * upgradeData.health.increasePerLevel);
+                playerHealth = maxHealth; // Start with full health
+                ATTACK_DAMAGE = upgradeData.attack.baseStat + (attackLevel * upgradeData.attack.increasePerLevel);
+                STUN_DURATION = upgradeData.stun.baseStat + (stunLevel * upgradeData.stun.increasePerLevel);
+
+                const storedCoins = localStorage.getItem(totalCoinsKey);
+                totalCoins = storedCoins ? parseInt(storedCoins, 10) : 0;
+                
+                if (typeof CANNON === 'undefined' || typeof THREE === 'undefined') {
+                    showMessage("Error: Required libraries (Three.js and/or Cannon.js) failed to load.");
+                    return;
+                }
+                
+                // --- FIX: Add event listeners here to ensure they are active on every game start ---
+                document.addEventListener('keydown', onKeyDown, false);
+                document.addEventListener('keyup', onKeyUp, false);
+
+                init();
+                animate();
+
+                // Hide the info panel after 5 seconds
+                setTimeout(hideInfoPanel, 5000);
+
+            } catch (error) {
+                console.error("Game Initialization Error:", error);
+                showMessage("An error occurred during game setup. Please check the console for details.");
+            }
+        };
+
+        window.onload = function() {
+            const storedCoins = localStorage.getItem(totalCoinsKey);
+            totalCoins = storedCoins ? parseInt(storedCoins, 10) : 0;
+            updateStartScreenCoins();
+            loadUpgrades();
+            
+            // Initially hide all game UI and show the main menu
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('start-menu').style.display = 'flex';
+            document.getElementById('main-menu-screen').style.display = 'flex';
+            document.getElementById('shop-menu-screen').style.display = 'none';
+            document.getElementById('info-panel').style.display = 'none';
+            document.getElementById('settings-icon').style.display = 'none';
+            document.getElementById('health-display').style.display = 'none';
+            document.getElementById('coin-display').style.display = 'none';
+            document.getElementById('cooldown-meters').style.display = 'none';
+            document.getElementById('scroll-ui').style.display = 'none';
+        };
+    </script>
+</body>
+</html>
